@@ -62,10 +62,9 @@ func move(delta):
 				velocity.x = dir.x * Speed * delta
 	elif dead:
 		velocity.x = 0
-		move_and_slide()
 	else:
 		print("Global.Character is not valid or missing")
-
+	move_and_slide()
 func _on_timer_timeout():
 	timer.wait_time = choose([4.0, 20.0])
 	if not is_raider_chase:
@@ -112,6 +111,5 @@ func take_damage(damage):
 		# Knockback and hurt duration
 		await get_tree().create_timer(hurt_duration).timeout
 		taking_damage = false
-
 
 
