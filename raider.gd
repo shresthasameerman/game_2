@@ -1,7 +1,7 @@
 extends CharacterBody2D
 
 const Speed = 20
-const GRAVITY = 980.0  # Adjust the gravity constant as needed
+const GRAVITY = 10000.0  # Adjust the gravity constant as needed
 var dir: Vector2 = Vector2.RIGHT
 var is_raider_chase: bool = true
 var player: CharacterBody2D
@@ -46,8 +46,7 @@ func move(delta):
 	player = Global.Character
 	if !dead:
 		if Global.Character and Global.Character:
-			
-			if not is_on_floor():
+			if !is_on_floor():
 				velocity.y += GRAVITY * delta
 			is_roaming = true
 			if not taking_damage and is_raider_chase:
@@ -111,5 +110,4 @@ func take_damage(damage):
 		# Knockback and hurt duration
 		await get_tree().create_timer(hurt_duration).timeout
 		taking_damage = false
-
 
