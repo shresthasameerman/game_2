@@ -3,15 +3,12 @@ extends CharacterBody2D
 const SPEED = 130.0
 const JUMP_VELOCITY = -295.0
 const DOUBLE_JUMP_VELOCITY = -200.0
-
 var attack_type: String
 var current_attack: bool
-
-var gravity: float = 1000.0  # Default gravity value if project setting fails
-
+# Get the gravity from the project settings to be synced with RigidBody nodes.
+var gravity = ProjectSettings.get_setting("physics/2d/default_gravity")
 @onready var animated_sprite = $AnimatedSprite2D
 var isAttacking = false
-
 # AudioStreamPlayer nodes
 @onready var audio_player_running: AudioStreamPlayer = $AudioStreamPlayerRunning
 @onready var audio_player_jumping: AudioStreamPlayer = $AudioStreamPlayerJumping
@@ -23,19 +20,15 @@ var double_jump_used = false
 
 func _ready():
 	add_to_group("Character")
+	
+	Global.Character = self
 	current_attack = false
 
 	# Connect the animation finished signal
 	animated_sprite.connect("animation_finished", self._on_AnimatedSprite2D_animation_finished)
 
-	# Get the gravity from the project settings to be synced with RigidBody nodes.
-	if ProjectSettings.has_setting("physics/2d/default_gravity"):
-		gravity = ProjectSettings.get_setting("physics/2d/default_gravity")
-	else:
-		# Print a warning message to the console
-		print_warning("Default gravity setting not found in project settings. Using default value.")
-
 func _physics_process(delta):
+	Global.DealDamageZone= deal_damage_zone
 	# Add the gravity.
 	if not is_on_floor():
 		velocity.y += gravity * delta
@@ -58,8 +51,7 @@ func _physics_process(delta):
 				attack_type = "single"
 			elif Input.is_action_just_pressed("attack2") and is_on_floor():
 				attack_type = "double"
-			else:
-				attack_type = "air"
+			set_damage(attack_type)
 			handle_attack_animation(attack_type)
 
 	# gets the movement direction: -1 , 0 , 1
@@ -72,11 +64,12 @@ func _physics_process(delta):
 		stop_running_sound()
 	
 	# flip the sprite:
-	if direction > 0:
+	if direction == 1:
 		animated_sprite.flip_h = false
-	elif direction < 0:
+		deal_damage_zone.scale.x = 1
+	if direction == -1:
 		animated_sprite.flip_h = true
-
+		deal_damage_zone.scale.x = -1
 	# animation play
 	if is_on_floor() and not current_attack:
 		if direction == 0:
@@ -99,6 +92,20 @@ func handle_attack_animation(attack_type):
 		var animation = str(attack_type, "_attack")
 		print(animation)
 		animated_sprite.play(animation)  # Play the attack animation
+		toggle_damage_collision(attack_type)
+		
+		
+		
+func toggle_damage_collision(attack_type):
+	var damage_zone_collision = deal_damage_zone.get_node("CollisionShape2D")
+	var wait_time: float
+	if attack_type == "single":
+		wait_time= 1
+	elif attack_type == "double":
+		wait_time = 1.3
+	damage_zone_collision.disabled = false
+	await get_tree().create_timer(wait_time).timeout
+	damage_zone_collision.disabled = true
 
 func play_running_sound():
 	if audio_player_running != null and not audio_player_running.playing:
@@ -115,6 +122,10 @@ func play_jump_sound():
 func _on_AnimatedSprite2D_animation_finished():
 	# This function will be called when the animation finishes
 	current_attack = false
-
-func print_warning(message):
-	print("WARNING: " + message)
+func set_damage(attack_type):
+	var current_damage_to_deal: int
+	if attack_type == "single":
+		current_damage_to_deal = 8
+	elif attack_type == "double":
+		current_damage_to_deal = 16
+	Global.PlayerDamageAmount = current_damage_to_deal
